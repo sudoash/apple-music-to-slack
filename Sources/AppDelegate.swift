@@ -163,7 +163,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func updateStatusDisplay(_ status: String) {
         if let statusMenuItem = menu.item(withTag: 1) {
-            statusMenuItem.title = "Status: \(status)"
+            if status.count <= 50 {
+                statusMenuItem.title = "Status: \(status)"
+
+                return
+            }
+
+            // Truncate status text to 50 characters and append ellipsis
+            let statusText = String(status[status.startIndex..<status.index(status.startIndex, offsetBy: 50 - 1)]) + "…"
+            statusMenuItem.title = "Status: \(statusText)"
         }
     }
     
@@ -197,7 +205,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     lastPlayedTrack = songInfo
                     
                     await MainActor.run {
-                        updateStatusDisplay("Playing: \(songInfo.artist) - \(songInfo.name)")
+                        updateStatusDisplay("▶ \(songInfo.artist) - \(songInfo.name)")
                     }
                     
                     appLogger.info("Song changed; updating Slack status.", metadata: ["info": "\(currentTrackInfo)"])
