@@ -1,0 +1,8 @@
+# Example configuration file for apple-music-to-slack
+# Place this file as 'settings.toml' in your config directory
+
+# Slack auth token
+slack_token = "xoxp-your-slack-token-here"
+
+# Include album name in Slack status (default: true)
+# include_album_name = true
