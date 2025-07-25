@@ -47,7 +47,7 @@ struct Main : AsyncParsableCommand {
 		let includeAlbumName = conf.includeAlbumName ?? true
 		
 		/* Retrieve the initial Slack status to restore later when not playing. */
-		let initialStatus = try await getCurrentSlackStatus(slackToken: slackToken, logger: logger)
+		var initialStatus = try await getCurrentSlackStatus(slackToken: slackToken, logger: logger)
 		
 		logger.info("Starting continuous monitoring loop. Press Ctrl+C to stop.")
 
@@ -96,12 +96,19 @@ struct Main : AsyncParsableCommand {
 					)
 				} else {
 					logger.debug("We do not have music playing and previous status was not music; skipping update.")
+
+					// Retrieve the current Slack status to ensure we have the latest one.
+					initialStatus = try await getCurrentSlackStatus(slackToken: slackToken, logger: logger)
+
+					logger.debug("Retrieved current Slack status.", metadata: ["current-status": "\(initialStatus)"])
 				}
 			} else {
 				logger.debug("No music playing; skipping Slack profile update.", metadata: ["current-track-info": "\(currentTrackInfo)"])
 				
-				content = nil
 				lastUpdateWasMusic = false
+
+				// Retrieve the current Slack status to ensure we have the latest one.
+				initialStatus = try await getCurrentSlackStatus(slackToken: slackToken, logger: logger)
 			}
 			
 			/* Send the track info to Slack as a profile update if we have content. */
