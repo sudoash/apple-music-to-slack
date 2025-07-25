@@ -1,8 +1,6 @@
 // swift-tools-version:6.0
 import PackageDescription
 
-
-
 let package = Package(
 	name: "apple-music-to-slack",
 	platforms: [.macOS(.v13)],
