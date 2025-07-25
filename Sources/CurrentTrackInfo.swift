@@ -1,12 +1,8 @@
 import Foundation
 import ScriptingBridge
-
 import Logging
 
-
-
 enum CurrentTrackInfo : Sendable {
-	
 	struct TrackInfo : Sendable, Equatable {
 		
 		var name: String
@@ -52,5 +48,4 @@ enum CurrentTrackInfo : Sendable {
 				return try .paused(.get(from: musicApp, logger: logger))
 		}
 	}
-	
 }

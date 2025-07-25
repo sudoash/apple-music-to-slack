@@ -1,8 +1,6 @@
 import Foundation
-
 import CLTLogger
 import Logging
-
 
 private let logger = {
 	LoggingSystem.bootstrap{ _ in CLTLogger() }
@@ -14,7 +12,6 @@ internal func logger(_ logLevel: Logger.Level = .notice) -> Logger {
 	ret.logLevel = logLevel
 	return ret
 }
-
 
 struct SimpleError : Error {
 	let message: String
