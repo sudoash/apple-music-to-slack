@@ -5,11 +5,8 @@ import Logging
 import TOMLDecoder
 import XDG
 
-
-
 @main
 struct Main : AsyncParsableCommand {
-	
 	static let configuration = CommandConfiguration(
 		commandName: "apple-music-to-slack"
 	)
@@ -29,36 +26,30 @@ struct Main : AsyncParsableCommand {
 	func run() async throws {
 		let logger = logger(verbose ? .debug : .notice)
 		
-		/* Retrieve the Slack token first. */
-		let slackToken = try slackToken ?? ProcessInfo.processInfo.environment["AMTS_SLACK_TOKEN"] ?? { () -> String? in
+		/* Load configuration settings first. */
+		let conf: Conf = try {
 			let directories = try BaseDirectories(prefixAll: "apple-music-to-slack")
 			guard let confFile = try directories.findConfigFile("settings.toml"), let confURL = URL(filePath: confFile) else {
-				return nil
+				throw SimpleError(message: "Cannot find the settings.toml file. Please create a settings.toml file in the config directory.")
 			}
+
 			let confData = try Data(contentsOf: confURL)
-			let conf = try TOMLDecoder().decode(Conf.self, from: confData)
-			return conf.slackToken
-		}()
-		guard let slackToken else {
-			throw SimpleError(message: "Cannot find the Slack token. You should either provide it as an argument or set the environment variable AMTS_SLACK_TOKEN, or finally create a settings.toml file in the config directory or the program.")
-		}
-		
-		/* Load configuration settings. */
-		let conf: Conf? = try {
-			let directories = try BaseDirectories(prefixAll: "apple-music-to-slack")
-			guard let confFile = try directories.findConfigFile("settings.toml"), let confURL = URL(filePath: confFile) else {
-				return nil
-			}
-			let confData = try Data(contentsOf: confURL)
+
 			return try TOMLDecoder().decode(Conf.self, from: confData)
 		}()
 		
-		/* Determine final settings from config file only. */
-		let includeAlbumName = conf?.includeAlbumName ?? false
+		/* Retrieve the Slack token from command line, environment, or config file. */
+		let slackToken = slackToken ?? ProcessInfo.processInfo.environment["AMTS_SLACK_TOKEN"] ?? conf.slackToken
+		guard let slackToken else {
+			throw SimpleError(message: "Cannot find the Slack token. You should either provide it as an argument or set the environment variable AMTS_SLACK_TOKEN, or set it in the settings.toml file.")
+		}
+		
+		let includeAlbumName = conf.includeAlbumName ?? true
 		
 		/* Next, retrieve the current track info and the new profile status. */
 		let currentTrackInfo = try CurrentTrackInfo.get(logger: logger)
 		logger.debug("Sending music track info.", metadata: ["info": "\(currentTrackInfo)"])
+
 		let content: ProfileUpdateContent
 		if case let .playing(songInfo) = currentTrackInfo {
 			let statusText: String
@@ -86,10 +77,12 @@ struct Main : AsyncParsableCommand {
 		urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
 		urlRequest.addValue("Bearer \(slackToken)", forHTTPHeaderField: "Authorization")
 		urlRequest.httpBody = try JSONEncoder().encode(content)
+
 		let (data, urlResponse) = try await URLSession.shared.data(for: urlRequest)
 		guard let httpResponse = urlResponse as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode else {
 			throw SimpleError(message: "Cannot send the profile update to Slack.")
 		}
+
 		let response = try JSONDecoder().decode(ProfileUpdateResponse.self, from: data)
 		guard response.ok else {
 			throw SimpleError(message: "Error sending profile update to Slack. Error message: \(response.error ?? "<No Error in Response>")")
@@ -97,7 +90,6 @@ struct Main : AsyncParsableCommand {
 	}
 	
 	private struct ProfileUpdateContent : Encodable {
-		
 		var statusText: String
 		var statusEmoji: String
 		var statusExpiration: Date?
@@ -129,15 +121,11 @@ struct Main : AsyncParsableCommand {
 			case statusText = "status_text"
 			case statusEmoji = "status_emoji"
 			case statusExpiration = "status_expiration"
-		}
-		
+		}	
 	}
 	
 	private struct ProfileUpdateResponse : Decodable {
-		
 		var ok: Bool
 		var error: String?
-		
 	}
-	
 }
