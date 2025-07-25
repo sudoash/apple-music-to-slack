@@ -24,7 +24,7 @@ struct Main : AsyncParsableCommand {
 	var slackToken: String?
 	
 	func run() async throws {
-		let logger = logger(verbose ? .debug : .notice)
+		let logger = logger(verbose ? .debug : .info)
 		
 		/* Load configuration settings first. */
 		let conf: Conf = try {
@@ -58,6 +58,9 @@ struct Main : AsyncParsableCommand {
 		// This is useful to avoid unnecessary updates when the status is already set to the original status.
 		// This is especially useful when the user starts the script while no music is playing		
 		var lastUpdateWasMusic = false
+		
+		// Track the last played song to avoid redundant updates
+		var lastPlayedTrack: CurrentTrackInfo.TrackInfo? = nil
 
 		/* Run the track info and profile updating in a loop every 10 seconds. */
 		while true {
@@ -68,26 +71,37 @@ struct Main : AsyncParsableCommand {
 			var content: ProfileUpdateContent? = nil
 
 			if case let .playing(songInfo) = currentTrackInfo {
-				let statusText: String
-
-				if includeAlbumName {
-					statusText = "\(songInfo.artist) — \(songInfo.album) — \(songInfo.name)"
-				} else {
-					statusText = "\(songInfo.artist) — \(songInfo.name)"
-				}
+				// Check if the song has changed
+				let songHasChanged = lastPlayedTrack != songInfo
 				
-				content = ProfileUpdateContent(
-					statusText: statusText,
-					statusEmoji: (useRandomEmoji ? MusicEmoji.allCases.randomElement()! : .notes).rawValue,
-					statusExpiration: nil
-				)
+				if songHasChanged {
+					let statusText: String
 
-				lastUpdateWasMusic = true
+					if includeAlbumName {
+						statusText = "\(songInfo.artist) — \(songInfo.album) — \(songInfo.name)"
+					} else {
+						statusText = "\(songInfo.artist) — \(songInfo.name)"
+					}
+					
+					content = ProfileUpdateContent(
+						statusText: statusText,
+						statusEmoji: (useRandomEmoji ? MusicEmoji.allCases.randomElement()! : .notes).rawValue,
+						statusExpiration: nil
+					)
+
+					lastUpdateWasMusic = true
+					lastPlayedTrack = songInfo
+					
+					logger.info("Song changed; updating Slack status.", metadata: ["info": "\(currentTrackInfo)"])
+				} else {
+					logger.debug("Same song still playing; skipping Slack update.", metadata: ["info": "\(currentTrackInfo)"])
+				}
 			} else if clearWhenNotPlaying {
 				if lastUpdateWasMusic {
-					logger.debug("We do not have music playing; restoring original Slack status.")
+					logger.info("Paused/Stopped; restoring original Slack status.")
 
 					lastUpdateWasMusic = false
+					lastPlayedTrack = nil
 
 					content = ProfileUpdateContent(
 						statusText: initialStatus.statusText,
@@ -106,6 +120,7 @@ struct Main : AsyncParsableCommand {
 				logger.debug("No music playing; skipping Slack profile update.", metadata: ["current-track-info": "\(currentTrackInfo)"])
 				
 				lastUpdateWasMusic = false
+				lastPlayedTrack = nil
 
 				// Retrieve the current Slack status to ensure we have the latest one.
 				initialStatus = try await getCurrentSlackStatus(slackToken: slackToken, logger: logger)
@@ -134,8 +149,8 @@ struct Main : AsyncParsableCommand {
 					try await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
 					continue
 				}
-				
-				logger.info("Successfully updated Slack profile.")
+
+				logger.debug("Successfully updated Slack profile.")
 			}
 			
 			/* Wait 10 seconds before the next iteration. */
