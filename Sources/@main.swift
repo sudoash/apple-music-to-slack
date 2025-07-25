@@ -20,7 +20,7 @@ struct Main : AsyncParsableCommand {
 	@Flag(inversion: .prefixedNo, help: "Use a random emoji from a list of pre-defined ones. If set to false, the :notes: emoji will be used.")
 	var useRandomEmoji: Bool = false
 	
-	@Flag(inversion: .prefixedNo, help: "Clear Slack’s status when Apple Music isn’t playing. When false, the status will remain unchanged.")
+	@Flag(inversion: .prefixedNo, help: "Clear Slack's status when Apple Music isn't playing. When false, the status will remain unchanged.")
 	var clearWhenNotPlaying: Bool = true
 	
 	@Option
@@ -43,13 +43,34 @@ struct Main : AsyncParsableCommand {
 			throw SimpleError(message: "Cannot find the Slack token. You should either provide it as an argument or set the environment variable AMTS_SLACK_TOKEN, or finally create a settings.toml file in the config directory or the program.")
 		}
 		
+		/* Load configuration settings. */
+		let conf: Conf? = try {
+			let directories = try BaseDirectories(prefixAll: "apple-music-to-slack")
+			guard let confFile = try directories.findConfigFile("settings.toml"), let confURL = URL(filePath: confFile) else {
+				return nil
+			}
+			let confData = try Data(contentsOf: confURL)
+			return try TOMLDecoder().decode(Conf.self, from: confData)
+		}()
+		
+		/* Determine final settings from config file only. */
+		let includeAlbumName = conf?.includeAlbumName ?? false
+		
 		/* Next, retrieve the current track info and the new profile status. */
 		let currentTrackInfo = try CurrentTrackInfo.get(logger: logger)
 		logger.debug("Sending music track info.", metadata: ["info": "\(currentTrackInfo)"])
 		let content: ProfileUpdateContent
 		if case let .playing(songInfo) = currentTrackInfo {
+			let statusText: String
+
+			if includeAlbumName {
+				statusText = "\(songInfo.artist) — \(songInfo.album) — \(songInfo.name)"
+			} else {
+				statusText = "\(songInfo.artist) — \(songInfo.name)"
+			}
+			
 			content = ProfileUpdateContent(
-				statusText: "\(songInfo.artist) — \(songInfo.album) — \(songInfo.name)",
+				statusText: statusText,
 				statusEmoji: (useRandomEmoji ? MusicEmoji.allCases.randomElement()! : .notes).rawValue,
 				statusExpiration: nil
 			)
