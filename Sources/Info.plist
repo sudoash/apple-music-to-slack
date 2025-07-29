@@ -26,5 +26,7 @@
     <string></string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>This app needs to access Apple Music to read the currently playing track information and update your Slack status.</string>
 </dict>
 </plist>

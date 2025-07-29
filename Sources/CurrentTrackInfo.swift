@@ -4,7 +4,6 @@ import Logging
 
 enum CurrentTrackInfo : Sendable {
 	struct TrackInfo : Sendable, Equatable {
-		
 		var name: String
 		var artist: String
 		var album: String
