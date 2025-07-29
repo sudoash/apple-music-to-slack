@@ -17,6 +17,6 @@ let package = Package(
 			.product(name: "CLTLogger",      package: "clt-logger"),
 			.product(name: "TOMLDecoder",    package: "TOMLDecoder"),
 			.product(name: "XDG",            package: "swift-xdg"),
-		], path: "Sources", exclude: ["ScriptingBridge/ Readme.md"]),
+		], path: "Sources", exclude: ["ScriptingBridge/ Readme.md", "Info.plist"]),
 	]
 )

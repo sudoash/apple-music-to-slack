@@ -11,6 +11,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var monitoringTask: Task<Void, Never>?
     private var isMonitoring = false
     
+    // Status icons
+    private var playingIcon: NSImage!
+    private var stoppedIcon: NSImage!
+    
     // Configuration
     private var conf: Conf!
     private var slackToken: String!
@@ -29,6 +33,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }()
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        loadStatusIcons()
         setupMenuBar()
         loadConfiguration()
     }
@@ -37,9 +42,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         stopMonitoring()
     }
     
+    private func loadStatusIcons() {
+        let playingImagePath = Bundle.main.path(forResource: "statusicon-playing-v1", ofType: "png")!
+        let stoppedImagePath = Bundle.main.path(forResource: "statusicon-stopped-v1", ofType: "png")!
+
+        // Load the status icons from the Resources folder
+        playingIcon = NSImage(contentsOfFile: playingImagePath)
+        stoppedIcon = NSImage(contentsOfFile: stoppedImagePath)
+            
+        // Set icon size to fit in the menu bar
+        playingIcon?.size = NSSize(width: 18, height: 18)
+        stoppedIcon?.size = NSSize(width: 18, height: 18)
+    }
+    
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.title = "♪"
+        statusItem.button?.image = stoppedIcon
         statusItem.button?.toolTip = "Apple Music to Slack"
         
         menu = NSMenu()
@@ -119,6 +137,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             do {
                 // Get initial Slack status
                 initialStatus = try await getCurrentSlackStatus()
+
                 await MainActor.run {
                     updateStatusDisplay("Monitoring active")
                 }
@@ -130,12 +149,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 // Start monitoring loop
                 while !Task.isCancelled {
                     await monitorMusicAndUpdateSlack()
+                    
                     try await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
                 }
             } catch {
+                // If the user cancels the task or an error occurs, handle it gracefully.
+                stopMonitoring()
+
+                if Task.isCancelled {
+                    appLogger.info("Monitoring task was cancelled.")
+
+                    return
+                } 
+
                 await MainActor.run {
                     showAlert(message: "Monitoring error: \(error.localizedDescription)")
-                    stopMonitoring()
+
+                    appLogger.error("Monitoring task encountered: \(error.localizedDescription)", metadata: ["error": "\(error)"])
                 }
             }
         }
@@ -158,7 +188,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             startStopMenuItem.title = isMonitoring ? "Stop Monitoring" : "Start Monitoring"
         }
         
-        statusItem.button?.title = isMonitoring ? "♪" : "♪"
+        statusItem.button?.image = isMonitoring ? playingIcon : stoppedIcon
     }
     
     private func updateStatusDisplay(_ status: String) {

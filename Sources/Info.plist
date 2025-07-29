@@ -6,6 +6,8 @@
     <string>Apple Music to Slack</string>
     <key>CFBundleExecutable</key>
     <string>apple-music-to-slack</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>xyz.snowdon.apple-music-to-slack</string>
     <key>CFBundleName</key>

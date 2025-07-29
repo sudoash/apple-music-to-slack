@@ -7,3 +7,9 @@ xcuserdata/
 /.build/
 /.swiftpm/
 /Packages/
+
+# Build artifacts
+/build/
+
+# Generated icon source (keep the .icns)
+Resources/icon_source.png

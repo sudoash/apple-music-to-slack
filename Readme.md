@@ -1,6 +1,6 @@
 # Apple Music to Slack
 
-Update your Slack status with the current song playing via the Music.app. Now available as a convenient menu bar application!
+Update your Slack status with the current song playing via the Music.app.
 
 ## Setup
 
@@ -17,9 +17,29 @@ Update your Slack status with the current song playing via the Music.app. Now av
 
    5. Copy the `OAuth Access Token`; you’ll need it to configure `apple-music-to-slack`;
 
-2. Clone the repo & compile with `swift build -c release`;
+2. Clone the repo & build the application:
 
-3. Configure `apple-music-to-slack`:
+   ```sh
+   # Build the .app bundle
+   make app
+   
+   # Or build and install directly to Applications
+   make install
+   ```
+
+   Alternatively, you can build manually:
+   ```sh
+   ./build_app.sh
+   ```
+
+3. Install the application:
+
+   ```sh
+   # Copy the app to Applications folder
+   cp -r "build/Apple Music to Slack.app" /Applications/
+   ```
+
+4. Configure `apple-music-to-slack`:
 
    ```sh
    readonly CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/apple-music-to-slack"
@@ -27,11 +47,12 @@ Update your Slack status with the current song playing via the Music.app. Now av
    echo 'slack_token = "xoxp-11111-11111-11111-111111111111"' >"$CONF_DIR/settings.toml"
    ```
 
-4. Run the menu bar application:
+5. Launch the application:
 
-   ```sh
-   ./.build/release/apple-music-to-slack
-   ```
+   You can now launch "Apple Music to Slack" from:
+   - Applications folder in Finder
+   - Spotlight search (⌘+Space)
+   - Or run directly: `open "/Applications/Apple Music to Slack.app"`
 
    The app will appear in your menu bar with a ♪ icon. Click on it to:
    - Start/Stop monitoring
@@ -42,10 +63,40 @@ Update your Slack status with the current song playing via the Music.app. Now av
    Alternatively, you can set the Slack token via environment variable:
    ```sh
    export AMTS_SLACK_TOKEN=xoxp-11111-11111-11111-111111111111
-   ./.build/release/apple-music-to-slack
+   open "/Applications/Apple Music to Slack.app"
    ```
 
-5.  Success! 🎶
+6.  Success! 🎶
+
+## Building from Source
+
+If you prefer to build manually:
+
+```sh
+# Clone the repository
+git clone <repository-url>
+cd apple-music-to-slack
+
+# Build the app bundle
+make app
+
+# Install to Applications (optional)
+make install
+
+# Clean build artifacts
+make clean
+```
+
+## Customizing the App Icon
+
+The app includes a default green music note icon. To use your own icon:
+
+1. Create a 1024x1024 PNG image
+2. Run: `./create_icon.sh your_icon.png`
+3. Move the generated `AppIcon.icns` to `Resources/`
+4. Rebuild: `make clean && make app`
+
+See [ICON.md](ICON.md) for detailed icon creation instructions.
 
 ## Features
 
