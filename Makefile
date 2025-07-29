@@ -1,4 +1,4 @@
-.PHONY: app install clean help icon
+.PHONY: app install clean help
 
 help:
 	@echo "Apple Music to Slack - Build Targets:"
@@ -9,7 +9,7 @@ help:
 	@echo "  help    - Show this help message"
 	@echo ""
 	@echo "Quick start:"
-	@echo "  make app && ./install.sh"
+	@echo "  make install"
 	@echo ""
 	@echo "Custom icon:"
 	@echo "  ./create_icon.sh your_icon.png && make app"
