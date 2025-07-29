@@ -150,7 +150,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 while !Task.isCancelled {
                     await monitorMusicAndUpdateSlack()
                     
-                    try await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
+                    try await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
                 }
             } catch {
                 // If the user cancels the task or an error occurs, handle it gracefully.
@@ -293,6 +293,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             
         } catch {
             appLogger.error("Error in monitoring loop: \(error)")
+            
             await MainActor.run {
                 updateStatusDisplay("Error: \(error.localizedDescription)")
             }
